@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import L from 'leaflet'
 import { api, GeoVocabResponse } from '@/lib/api'
-import { MapPin, Search, Copy, Check, AlertCircle, ChevronLeft, ChevronRight, Navigation } from 'lucide-react'
+import { Search, Copy, Check, AlertCircle, ChevronLeft, ChevronRight, Navigation, Plus, Minus } from 'lucide-react'
 
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
@@ -25,6 +26,7 @@ export default function Home() {
   const [isPanelOpen, setIsPanelOpen] = useState(true)
   const [shouldAnimate, setShouldAnimate] = useState(false)
   const [showMarker, setShowMarker] = useState(true)
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
 
   const handleMapClick = async (lat: number, lon: number) => {
     setMarkerPosition([lat, lon])
@@ -37,8 +39,9 @@ export default function Home() {
     try {
       const data = await api.getWordsFromCoordinates(lat, lon)
       setResult(data)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to get words for this location')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get words for this location'
+      setError(errorMessage)
       setShouldAnimate(false)
       setShowMarker(true)
     } finally {
@@ -60,8 +63,9 @@ export default function Home() {
       setResult(data)
       setMarkerPosition([data.latitude, data.longitude])
       setIsPanelOpen(true)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to find location')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to find location'
+      setError(errorMessage)
       setResult(null)
       setShouldAnimate(false)
       setShowMarker(true)
@@ -86,7 +90,7 @@ export default function Home() {
           await handleMapClick(lat, lon)
           setLoading(false)
         },
-        (error) => {
+        () => {
           setError('Unable to get your location. Please check permissions.')
           setLoading(false)
         }
@@ -100,6 +104,18 @@ export default function Home() {
     navigator.clipboard.writeText(text)
     setCopied(type)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleZoomIn = () => {
+    if (mapInstance) {
+      mapInstance.zoomIn()
+    }
+  }
+
+  const handleZoomOut = () => {
+    if (mapInstance) {
+      mapInstance.zoomOut()
+    }
   }
 
   return (
@@ -134,6 +150,24 @@ export default function Home() {
         <Navigation className="w-5 h-5 text-blue-400" />
       </button>
 
+      {/* Zoom Controls - Below Locate Button */}
+      <div className="absolute top-20 right-4 z-50 flex flex-col gap-2">
+        <button
+          onClick={handleZoomIn}
+          className="p-3 bg-gray-800/95 backdrop-blur-md rounded-xl shadow-lg hover:bg-gray-700 transition-all border border-gray-700"
+          title="Zoom in"
+        >
+          <Plus className="w-5 h-5 text-gray-300" />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="p-3 bg-gray-800/95 backdrop-blur-md rounded-xl shadow-lg hover:bg-gray-700 transition-all border border-gray-700"
+          title="Zoom out"
+        >
+          <Minus className="w-5 h-5 text-gray-300" />
+        </button>
+      </div>
+
       {/* Full Screen Map */}
       <div className="absolute inset-0 w-full h-full">
         <Map
@@ -143,6 +177,7 @@ export default function Home() {
           shouldAnimate={shouldAnimate}
           showMarker={showMarker}
           onAnimationComplete={handleAnimationComplete}
+          onMapReady={setMapInstance}
         />
       </div>
 

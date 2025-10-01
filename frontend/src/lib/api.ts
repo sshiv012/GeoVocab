@@ -30,8 +30,8 @@ export const api = {
     return response.data.data
   },
 
-  async createPremiumGeovocab(geoHash: string, magicwords: string): Promise<any> {
-    const response = await axios.post<ApiResponse<any>>(
+  async createPremiumGeovocab(geoHash: string, magicwords: string): Promise<GeoVocabResponse> {
+    const response = await axios.post<ApiResponse<GeoVocabResponse>>(
       `${API_BASE_URL}/geovocab/premium`,
       { geoHash, magicwords }
     )

@@ -50,6 +50,7 @@ interface MapProps {
   shouldAnimate?: boolean
   showMarker?: boolean
   onAnimationComplete?: () => void
+  onMapReady?: (map: L.Map) => void
 }
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
@@ -61,12 +62,19 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null
 }
 
-function AnimatedView({ position, shouldAnimate, onAnimationComplete }: {
+function AnimatedView({ position, shouldAnimate, onAnimationComplete, onMapReady }: {
   position: [number, number],
   shouldAnimate: boolean,
-  onAnimationComplete?: () => void
+  onAnimationComplete?: () => void,
+  onMapReady?: (map: L.Map) => void
 }) {
   const map = useMap()
+
+  useEffect(() => {
+    if (onMapReady) {
+      onMapReady(map)
+    }
+  }, [map, onMapReady])
 
   useEffect(() => {
     if (position && shouldAnimate) {
@@ -102,7 +110,8 @@ export default function Map({
   popupContent,
   shouldAnimate = false,
   showMarker = true,
-  onAnimationComplete
+  onAnimationComplete,
+  onMapReady
 }: MapProps) {
   const [isMounted, setIsMounted] = useState(false)
 
@@ -137,6 +146,14 @@ export default function Map({
           position={markerPosition}
           shouldAnimate={shouldAnimate}
           onAnimationComplete={onAnimationComplete}
+          onMapReady={onMapReady}
+        />
+      )}
+      {!markerPosition && (
+        <AnimatedView
+          position={[20, 0]}
+          shouldAnimate={false}
+          onMapReady={onMapReady}
         />
       )}
       {markerPosition && showMarker && (
